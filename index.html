@@ -1,99 +1,1508 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Melody → Chords</title>
-<link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Melody → Chords</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: "#08090a",
+            panel: "#111315",
+            panel2: "#17191c",
+            line: "#292d31",
+            cream: "#f4f1e8",
+            gold: "#d7a84f",
+            gold2: "#f0c76d",
+            muted: "#8e9399",
+          },
+
+          fontFamily: {
+            display: [
+              "Inter",
+              "ui-sans-serif",
+              "system-ui",
+              "sans-serif"
+            ],
+            mono: [
+              "JetBrains Mono",
+              "SFMono-Regular",
+              "Menlo",
+              "monospace"
+            ],
+            serif: [
+              "Georgia",
+              "serif"
+            ]
+          },
+
+          boxShadow: {
+            glow: "0 0 40px rgba(215,168,79,.12)",
+            card: "0 20px 60px rgba(0,0,0,.25)"
+          }
+        }
+      }
+    }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap"
+    rel="stylesheet"
+  >
+
+  <style>
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background:
+        radial-gradient(
+          circle at 50% -10%,
+          rgba(215,168,79,.08),
+          transparent 35%
+        ),
+        #08090a;
+    }
+
+    ::selection {
+      background: rgba(215,168,79,.35);
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #0c0e10;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #30343a;
+      border-radius: 999px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #4a4f56;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      transition:
+        transform .2s ease,
+        border-color .2s ease,
+        background .2s ease,
+        box-shadow .2s ease;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    :focus-visible {
+      outline: 2px solid #d7a84f;
+      outline-offset: 3px;
+    }
+
+    dialog::backdrop {
+      background: rgba(0,0,0,.78);
+      backdrop-filter: blur(8px);
+    }
+
+    dialog {
+      animation: dialogIn .2s ease-out;
+    }
+
+    @keyframes dialogIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px) scale(.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* Piano roll */
+    #roll {
+      position: relative;
+      min-height: 300px;
+      overflow: auto;
+      background:
+        linear-gradient(
+          to bottom,
+          rgba(255,255,255,.035) 1px,
+          transparent 1px
+        ),
+        #090b0d;
+      background-size: 100% 20px;
+    }
+
+    #roll .row {
+      position: absolute;
+      left: 0;
+      right: 0;
+      border-top: 1px solid rgba(255,255,255,.045);
+      font: 10px "DM Mono", monospace;
+      color: #777d84;
+      padding-left: 8px;
+    }
+
+    #roll .row.blk {
+      background: rgba(0,0,0,.15);
+    }
+
+    .note {
+      position: absolute;
+      background: linear-gradient(
+        135deg,
+        #f0c76d,
+        #c89232
+      );
+      color: #15110a;
+      font: 10px "DM Mono", monospace;
+      padding: 2px 5px;
+      border-radius: 4px;
+      border: 1px solid rgba(255,255,255,.15);
+      cursor: pointer;
+      overflow: hidden;
+      min-height: 9px;
+      box-shadow:
+        0 4px 12px rgba(215,168,79,.18);
+    }
+
+    .note.approx {
+      background:
+        repeating-linear-gradient(
+          45deg,
+          #d7a84f,
+          #d7a84f 4px,
+          #92702f 4px,
+          #92702f 8px
+        );
+    }
+
+    /* Remove browser default number arrows visually */
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      opacity: .4;
+    }
+
+    /* Print */
+    @media print {
+      body {
+        background: white !important;
+        color: black !important;
+      }
+
+      header,
+      #input,
+      #work,
+      #bar,
+      #status {
+        display: none !important;
+      }
+
+      #sheet {
+        display: block !important;
+      }
+
+      #sheet .ch {
+        font: bold 28px monospace;
+        margin: 12px 0;
+      }
+    }
+  </style>
 </head>
-<body>
-<header>
-  <h1>MELODY → CHORDS</h1>
-  <nav><button id="btnSettings">Settings</button></nav>
-</header>
-<main>
-  <p id="status" role="status" aria-live="polite"></p>
-  <section id="input" aria-labelledby="hIn">
-    <h2 id="hIn">Turn melodies into chords.</h2>
-    <p class="muted">Sing, hum, or upload a melody and explore chord progressions that fit it.</p>
-    <div id="inputRow">
-      <article id="recBox">
-        <button id="btnRec" class="primary">🎙 Record Melody</button>
-        <div id="recLive" hidden>
-          <p><strong>Recording</strong> <span id="recTime">● 00:00</span></p>
-          <canvas id="meter" width="400" height="60" aria-label="Input level meter"></canvas>
-          <button id="btnStop">Stop Recording</button>
+
+<body class="min-h-screen bg-ink text-stone-100 font-display antialiased">
+
+  <!-- =========================================================
+       HEADER
+  ========================================================== -->
+
+  <header class="sticky top-0 z-40 border-b border-white/[0.07]
+                 bg-[#08090a]/85 backdrop-blur-xl">
+
+    <div class="mx-auto flex max-w-[1400px] items-center
+                justify-between px-5 py-4 lg:px-8">
+
+      <div class="flex items-center gap-4">
+
+        <div class="flex h-9 w-9 items-center justify-center
+                    rounded-xl border border-gold/20
+                    bg-gold/[0.08] text-gold shadow-glow">
+
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            class="h-4 w-4"
+          >
+            <path
+              d="M9 18V5l11-2v13"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <circle
+              cx="6"
+              cy="18"
+              r="3"
+              stroke="currentColor"
+              stroke-width="1.7"
+            />
+            <circle
+              cx="17"
+              cy="16"
+              r="3"
+              stroke="currentColor"
+              stroke-width="1.7"
+            />
+          </svg>
+
         </div>
-      </article>
-      <label id="drop" for="file">
-        <span>or drop an audio file here</span>
-        <input id="file" type="file" accept=".mp3,.wav,.m4a,.ogg,.webm,audio/*">
-      </label>
-    </div>
-    <div id="player" hidden>
-      <audio id="audio" controls></audio>
-      <span role="group" aria-label="Playback speed">
-        <button data-rate="0.75">0.75x</button><button data-rate="1">1x</button><button data-rate="1.25">1.25x</button><button data-rate="1.5">1.5x</button>
-        <button id="btnRestart">⏮ Restart</button>
-      </span>
-      <button id="btnAnalyze" class="primary">Analyze Melody</button>
-    </div>
-  </section>
 
-  <div id="work" hidden>
-    <div id="cols">
-      <div>
-        <details open id="secMel"><summary>Melody Analysis</summary>
-          <div id="roll" role="img" aria-label="Piano roll of detected notes"></div>
-          <p><button id="btnAddNote">+ Add note</button></p>
-          <p id="lowConf" class="warn" hidden>The detected notes are approximate. You can correct them manually.</p>
-          <p><label>Key <select id="keySel"></select></label>
-             <span id="keyInfo" class="muted"></span> · BPM <input id="bpm" type="number" min="40" max="220" value="96"></p>
-        </details>
+        <div>
+          <h1 class="font-mono text-sm font-medium tracking-[.22em]
+                     text-stone-100">
+            MELODY
+            <span class="text-gold">→</span>
+            CHORDS
+          </h1>
+
+          <p class="mt-0.5 hidden text-[10px] uppercase tracking-[.2em]
+                    text-stone-600 sm:block">
+            Harmony intelligence
+          </p>
+        </div>
+
       </div>
-      <aside>
-        <details open><summary>Suggested Chords</summary>
-          <p><label><input type="checkbox" id="simple"> Songwriter-friendly mode</label></p>
-          <div id="simpleBox" hidden></div>
-          <div id="cards"></div>
-          <article id="why" aria-live="polite"></article>
-        </details>
-      </aside>
+
+      <nav>
+        <button
+          id="btnSettings"
+          class="group flex items-center gap-2 rounded-xl
+                 border border-white/[0.08] bg-white/[0.025]
+                 px-3.5 py-2.5 font-mono text-xs text-stone-400
+                 hover:border-gold/40 hover:bg-gold/[0.06]
+                 hover:text-stone-100"
+        >
+
+          <svg
+            class="h-4 w-4 text-stone-500 group-hover:text-gold"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <path
+              d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"
+              stroke="currentColor"
+              stroke-width="1.5"
+            />
+            <path
+              d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.7 1.7-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56v.08h-2.4v-.08a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06-1.7-1.7.06-.06A1.7 1.7 0 0 0 8.46 15a1.7 1.7 0 0 0-1.56-1.03h-.08v-2.4h.08A1.7 1.7 0 0 0 8.46 10a1.7 1.7 0 0 0-.34-1.88l-.06-.06 1.7-1.7.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 12.73 5.2v-.08h2.4v.08a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.7 1.7-.06.06A1.7 1.7 0 0 0 19.4 10c.21.5.7.82 1.24.82h.08v2.4h-.08A1.7 1.7 0 0 0 19.4 15Z"
+              stroke="currentColor"
+              stroke-width="1.3"
+              stroke-linejoin="round"
+            />
+          </svg>
+
+          Settings
+        </button>
+      </nav>
+
     </div>
-    <section id="prog"><h2>Your Progression</h2>
-      <ol id="progList"></ol>
-      <p><select id="addSel" aria-label="Chord to add"></select>
-         <button id="btnAddChord">+ Add Chord</button>
-         <label>Voicing <select id="voicing"><option value="close">Close</option><option value="first">1st inversion</option><option value="second">2nd inversion</option><option value="open">Open</option></select></label>
-         <span id="voiceNotes" class="muted"></span></p>
+  </header>
+
+
+  <!-- =========================================================
+       MAIN
+  ========================================================== -->
+
+  <main class="mx-auto max-w-[1400px] px-4 pb-36 pt-8 sm:px-6 lg:px-8">
+
+    <p
+      id="status"
+      role="status"
+      aria-live="polite"
+      class="mb-4 min-h-5 font-mono text-xs text-gold"
+    ></p>
+
+
+    <!-- =======================================================
+         INPUT / HERO
+    ======================================================== -->
+
+    <section
+      id="input"
+      aria-labelledby="hIn"
+      class="relative overflow-hidden rounded-3xl
+             border border-white/[0.07]
+             bg-gradient-to-br from-white/[0.045]
+             via-white/[0.02] to-transparent
+             p-6 shadow-card sm:p-8 lg:p-10"
+    >
+
+      <!-- Ambient glow -->
+      <div
+        class="pointer-events-none absolute -right-32 -top-40
+               h-96 w-96 rounded-full bg-gold/[0.06]
+               blur-3xl"
+      ></div>
+
+      <div class="relative">
+
+        <div class="mb-8 max-w-2xl">
+
+          <div class="mb-4 inline-flex items-center gap-2
+                      rounded-full border border-gold/20
+                      bg-gold/[0.06] px-3 py-1.5
+                      font-mono text-[10px] uppercase
+                      tracking-[.18em] text-gold">
+
+            <span class="h-1.5 w-1.5 rounded-full bg-gold"></span>
+
+            Melody analysis engine
+
+          </div>
+
+          <h2
+            id="hIn"
+            class="font-display text-4xl font-semibold
+                   leading-[1.05] tracking-tight
+                   text-stone-100 sm:text-5xl lg:text-6xl"
+          >
+            Turn melodies
+            <span class="font-serif font-medium italic text-gold">
+              into chords.
+            </span>
+          </h2>
+
+          <p class="mt-5 max-w-xl text-sm leading-7 text-stone-500 sm:text-base">
+            Sing, hum, or upload a melody and discover chord progressions
+            that naturally fit your idea.
+          </p>
+
+        </div>
+
+
+        <!-- Input cards -->
+
+        <div
+          id="inputRow"
+          class="grid gap-4 lg:grid-cols-2"
+        >
+
+          <!-- Recording -->
+
+          <article
+            id="recBox"
+            class="group relative flex min-h-[230px]
+                   flex-col items-center justify-center
+                   overflow-hidden rounded-2xl
+                   border border-white/[0.08]
+                   bg-[#0d0f11] p-8 text-center
+                   transition hover:border-gold/30"
+          >
+
+            <div
+              class="pointer-events-none absolute inset-0
+                     bg-[radial-gradient(circle_at_center,rgba(215,168,79,.08),transparent_60%)]
+                     opacity-0 transition group-hover:opacity-100"
+            ></div>
+
+            <div
+              class="relative mb-5 flex h-16 w-16 items-center
+                     justify-center rounded-2xl
+                     border border-gold/20
+                     bg-gold/[0.06] text-gold
+                     shadow-glow"
+            >
+              <svg
+                class="h-7 w-7"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <rect
+                  x="8"
+                  y="3"
+                  width="8"
+                  height="12"
+                  rx="4"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                />
+                <path
+                  d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </div>
+
+            <button
+              id="btnRec"
+              class="primary relative rounded-xl
+                     bg-gold px-5 py-3 font-mono text-xs
+                     font-semibold text-black
+                     shadow-[0_10px_30px_rgba(215,168,79,.18)]
+                     hover:bg-gold2 hover:shadow-glow"
+            >
+              🎙 Record Melody
+            </button>
+
+            <p class="relative mt-3 text-xs text-stone-600">
+              Sing, hum or play an instrument
+            </p>
+
+
+            <!-- Recording state -->
+
+            <div
+              id="recLive"
+              hidden
+              class="mt-5 w-full"
+            >
+
+              <p class="font-mono text-xs text-stone-300">
+                <strong class="text-red-400">● Recording</strong>
+                <span id="recTime" class="ml-2 text-stone-500">
+                  00:00
+                </span>
+              </p>
+
+              <canvas
+                id="meter"
+                width="400"
+                height="60"
+                aria-label="Input level meter"
+                class="mt-3 h-16 w-full rounded-lg
+                       bg-black/30"
+              ></canvas>
+
+              <button
+                id="btnStop"
+                class="mt-3 rounded-lg border border-white/10
+                       px-4 py-2 font-mono text-xs
+                       text-stone-400 hover:border-red-400/40
+                       hover:text-red-300"
+              >
+                Stop Recording
+              </button>
+
+            </div>
+
+          </article>
+
+
+          <!-- Upload -->
+
+          <label
+            id="drop"
+            for="file"
+            class="group flex min-h-[230px]
+                   cursor-pointer flex-col items-center
+                   justify-center rounded-2xl
+                   border border-dashed border-white/[0.1]
+                   bg-[#0d0f11] p-8 text-center
+                   transition hover:border-gold/40
+                   hover:bg-gold/[0.025]"
+          >
+
+            <div
+              class="mb-5 flex h-16 w-16 items-center
+                     justify-center rounded-2xl
+                     border border-white/[0.08]
+                     bg-white/[0.025]
+                     text-stone-500
+                     transition group-hover:border-gold/20
+                     group-hover:text-gold"
+            >
+              <svg
+                class="h-7 w-7"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <path
+                  d="M12 16V4m0 0-4 4m4-4 4 4"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </div>
+
+            <span
+              class="font-mono text-xs font-medium
+                     uppercase tracking-[.12em]
+                     text-stone-300"
+            >
+              Drop an audio file here
+            </span>
+
+            <span class="mt-2 text-xs text-stone-600">
+              MP3 · WAV · M4A · OGG · WEBM
+            </span>
+
+            <span
+              class="mt-5 rounded-lg border border-white/[0.08]
+                     bg-white/[0.025] px-3 py-2
+                     font-mono text-[10px] text-stone-500
+                     group-hover:text-stone-300"
+            >
+              Browse files
+            </span>
+
+            <input
+              id="file"
+              type="file"
+              accept=".mp3,.wav,.m4a,.ogg,.webm,audio/*"
+              class="hidden"
+            >
+
+          </label>
+
+        </div>
+
+
+        <!-- Audio player -->
+
+        <div
+          id="player"
+          hidden
+          class="mt-5 flex flex-wrap items-center gap-3
+                 rounded-2xl border border-white/[0.07]
+                 bg-black/20 p-3"
+        >
+
+          <audio
+            id="audio"
+            controls
+            class="h-10 min-w-[260px] flex-1"
+          ></audio>
+
+          <span
+            role="group"
+            aria-label="Playback speed"
+            class="flex rounded-lg border border-white/[0.07]
+                   bg-white/[0.025] p-1"
+          >
+            <button
+              data-rate="0.75"
+              class="rounded-md px-2.5 py-1.5 font-mono text-[10px]
+                     text-stone-500 hover:bg-white/[0.05]
+                     hover:text-stone-200"
+            >
+              0.75x
+            </button>
+
+            <button
+              data-rate="1"
+              class="rounded-md bg-white/[0.06] px-2.5 py-1.5
+                     font-mono text-[10px] text-stone-300"
+            >
+              1x
+            </button>
+
+            <button
+              data-rate="1.25"
+              class="rounded-md px-2.5 py-1.5 font-mono text-[10px]
+                     text-stone-500 hover:bg-white/[0.05]"
+            >
+              1.25x
+            </button>
+
+            <button
+              data-rate="1.5"
+              class="rounded-md px-2.5 py-1.5 font-mono text-[10px]
+                     text-stone-500 hover:bg-white/[0.05]"
+            >
+              1.5x
+            </button>
+          </span>
+
+          <button
+            id="btnRestart"
+            class="rounded-lg border border-white/[0.08]
+                   px-3 py-2 font-mono text-xs
+                   text-stone-400 hover:border-gold/30
+                   hover:text-stone-100"
+          >
+            ⏮ Restart
+          </button>
+
+          <button
+            id="btnAnalyze"
+            class="primary rounded-lg bg-gold
+                   px-5 py-2.5 font-mono text-xs
+                   font-semibold text-black
+                   hover:bg-gold2"
+          >
+            Analyze Melody
+          </button>
+
+        </div>
+
+      </div>
     </section>
-  </div>
-  <section id="sheet"></section>
-</main>
-<footer id="bar" hidden>
-  <button id="btnPlayProg">▶ Play Progression</button>
-  <button id="btnPlayAll" class="primary">▶ Play Arrangement</button>
-  <button id="btnStopAll">⏹ Stop</button>
-  <button id="btnPrint">Print</button>
-</footer>
 
-<dialog id="dlgSet"><form method="dialog">
-  <h2>Settings &amp; Project</h2>
-  <p><label>Title <input id="title"></label></p>
-  <p><label>Volume <input id="vol" type="range" min="0" max="1" step="0.05" value="0.8"></label></p>
-  <p><label><input type="checkbox" id="theory"> Music Theory Details</label></p>
-  <p><button type="button" id="pNew">New</button> <button type="button" id="pSave">Save</button> <button type="button" id="pExport">Export Project</button></p>
-  <p><label>Saved <select id="pList"></select></label> <button type="button" id="pLoad">Load</button> <button type="button" id="pDel">Delete</button></p>
-  <p><button value="close">Close</button></p>
-</form></dialog>
 
-<dialog id="dlgNote"><form method="dialog">
-  <h2 id="noteH">Edit note</h2>
-  <p><label>Pitch <select id="nPitch"></select></label></p>
-  <p><label>Start (s) <input id="nStart" type="number" step="0.01" min="0"></label></p>
-  <p><label>Duration (s) <input id="nDur" type="number" step="0.01" min="0.05"></label></p>
-  <p><button value="ok" id="nOk">Save</button> <button type="button" id="nDel">Delete</button> <button value="cancel">Cancel</button></p>
-</form></dialog>
-<script src="app.js"></script>
+    <!-- =======================================================
+         WORKSPACE
+    ======================================================== -->
+
+    <div
+      id="work"
+      hidden
+      class="mt-6"
+    >
+
+      <div
+        id="cols"
+        class="grid gap-6 xl:grid-cols-[1.35fr_.65fr]"
+      >
+
+        <!-- ===================================================
+             MELODY ANALYSIS
+        ==================================================== -->
+
+        <div>
+
+          <details
+            open
+            id="secMel"
+            class="overflow-hidden rounded-2xl
+                   border border-white/[0.07]
+                   bg-[#0e1012] shadow-card"
+          >
+
+            <summary
+              class="flex cursor-pointer list-none
+                     items-center justify-between
+                     border-b border-white/[0.06]
+                     px-5 py-4 font-mono text-xs
+                     font-medium uppercase tracking-[.15em]
+                     text-stone-400"
+            >
+
+              <span class="flex items-center gap-3">
+
+                <span
+                  class="flex h-7 w-7 items-center justify-center
+                         rounded-lg bg-gold/[0.08]
+                         text-[10px] text-gold"
+                >
+                  01
+                </span>
+
+                Melody Analysis
+
+              </span>
+
+              <span class="text-stone-600">
+                ⌄
+              </span>
+
+            </summary>
+
+
+            <div class="p-5">
+
+              <div
+                id="roll"
+                role="img"
+                aria-label="Piano roll of detected notes"
+                class="rounded-xl border border-white/[0.06]"
+              ></div>
+
+
+              <div class="mt-4 flex flex-wrap items-center gap-3">
+
+                <button
+                  id="btnAddNote"
+                  class="rounded-lg border border-white/[0.08]
+                         bg-white/[0.025] px-3 py-2
+                         font-mono text-xs text-stone-400
+                         hover:border-gold/30 hover:text-stone-100"
+                >
+                  + Add note
+                </button>
+
+                <p
+                  id="lowConf"
+                  class="warn m-0 hidden rounded-lg
+                         border border-gold/10
+                         bg-gold/[0.04] px-3 py-2
+                         font-mono text-[10px] text-gold"
+                >
+                  Detected notes are approximate.
+                  You can correct them manually.
+                </p>
+
+              </div>
+
+
+              <!-- Analysis controls -->
+
+              <div
+                class="mt-5 grid gap-3 rounded-xl
+                       border border-white/[0.06]
+                       bg-black/20 p-4 sm:grid-cols-2"
+              >
+
+                <label class="flex flex-col gap-2">
+
+                  <span
+                    class="font-mono text-[10px] uppercase
+                           tracking-[.14em] text-stone-600"
+                  >
+                    Key
+                  </span>
+
+                  <select
+                    id="keySel"
+                    class="w-full rounded-lg border border-white/[0.08]
+                           bg-white/[0.025] px-3 py-2.5
+                           text-sm text-stone-200
+                           focus:border-gold/40"
+                  ></select>
+
+                  <span
+                    id="keyInfo"
+                    class="muted text-xs text-stone-600"
+                  ></span>
+
+                </label>
+
+
+                <label class="flex flex-col gap-2">
+
+                  <span
+                    class="font-mono text-[10px] uppercase
+                           tracking-[.14em] text-stone-600"
+                  >
+                    Tempo
+                  </span>
+
+                  <div class="relative">
+
+                    <input
+                      id="bpm"
+                      type="number"
+                      min="40"
+                      max="220"
+                      value="96"
+                      class="w-full rounded-lg border
+                             border-white/[0.08]
+                             bg-white/[0.025] px-3 py-2.5
+                             font-mono text-sm text-stone-200"
+                    >
+
+                    <span
+                      class="pointer-events-none absolute
+                             right-3 top-1/2 -translate-y-1/2
+                             font-mono text-[10px] text-stone-600"
+                    >
+                      BPM
+                    </span>
+
+                  </div>
+
+                </label>
+
+              </div>
+
+            </div>
+
+          </details>
+
+        </div>
+
+
+        <!-- ===================================================
+             CHORD SUGGESTIONS
+        ==================================================== -->
+
+        <aside>
+
+          <details
+            open
+            class="overflow-hidden rounded-2xl
+                   border border-white/[0.07]
+                   bg-[#0e1012] shadow-card"
+          >
+
+            <summary
+              class="flex cursor-pointer list-none
+                     items-center justify-between
+                     border-b border-white/[0.06]
+                     px-5 py-4 font-mono text-xs
+                     font-medium uppercase tracking-[.15em]
+                     text-stone-400"
+            >
+
+              <span class="flex items-center gap-3">
+
+                <span
+                  class="flex h-7 w-7 items-center justify-center
+                         rounded-lg bg-gold/[0.08]
+                         text-[10px] text-gold"
+                >
+                  02
+                </span>
+
+                Suggested Chords
+
+              </span>
+
+              <span class="text-stone-600">
+                ⌄
+              </span>
+
+            </summary>
+
+
+            <div class="p-5">
+
+              <label
+                class="flex cursor-pointer items-center gap-3
+                       rounded-xl border border-white/[0.06]
+                       bg-white/[0.02] p-3"
+              >
+
+                <input
+                  type="checkbox"
+                  id="simple"
+                  class="h-4 w-4 accent-[#d7a84f]"
+                >
+
+                <span>
+                  <span class="block text-sm text-stone-300">
+                    Songwriter-friendly mode
+                  </span>
+
+                  <span class="mt-0.5 block text-[11px]
+                               text-stone-600">
+                    Prioritize familiar, playable progressions
+                  </span>
+                </span>
+
+              </label>
+
+
+              <div
+                id="simpleBox"
+                hidden
+                class="mt-4"
+              ></div>
+
+
+              <div
+                id="cards"
+                class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3"
+              ></div>
+
+
+              <article
+                id="why"
+                aria-live="polite"
+                class="mt-5 rounded-xl border border-gold/10
+                       bg-gold/[0.035] p-4 text-sm
+                       text-stone-400"
+              ></article>
+
+            </div>
+
+          </details>
+
+        </aside>
+
+      </div>
+
+
+      <!-- =====================================================
+           PROGRESSION
+      ====================================================== -->
+
+      <section
+        id="prog"
+        class="mt-6 overflow-hidden rounded-2xl
+               border border-white/[0.07]
+               bg-[#0e1012] shadow-card"
+      >
+
+        <div
+          class="flex flex-col gap-3 border-b border-white/[0.06]
+                 px-5 py-4 sm:flex-row sm:items-center
+                 sm:justify-between"
+        >
+
+          <div>
+
+            <h2
+              class="font-display text-lg font-semibold
+                     tracking-tight text-stone-100"
+            >
+              Your Progression
+            </h2>
+
+            <p class="mt-1 text-xs text-stone-600">
+              Build, rearrange and audition your harmony.
+            </p>
+
+          </div>
+
+          <div
+            class="rounded-full border border-gold/10
+                   bg-gold/[0.04] px-3 py-1
+                   font-mono text-[10px] uppercase
+                   tracking-wider text-gold"
+          >
+            Arrangement
+          </div>
+
+        </div>
+
+
+        <div class="p-5">
+
+          <ol
+            id="progList"
+            class="flex min-h-[100px] flex-wrap
+                   items-center gap-3 p-0"
+          ></ol>
+
+
+          <div
+            class="mt-5 flex flex-col gap-3
+                   rounded-xl border border-white/[0.06]
+                   bg-black/20 p-4 lg:flex-row
+                   lg:items-center"
+          >
+
+            <select
+              id="addSel"
+              aria-label="Chord to add"
+              class="min-w-[180px] flex-1 rounded-lg
+                     border border-white/[0.08]
+                     bg-white/[0.025] px-3 py-2.5
+                     font-mono text-xs text-stone-300"
+            ></select>
+
+            <button
+              id="btnAddChord"
+              class="rounded-lg border border-gold/20
+                     bg-gold/[0.07] px-4 py-2.5
+                     font-mono text-xs text-gold
+                     hover:bg-gold/[0.12]"
+            >
+              + Add Chord
+            </button>
+
+            <label
+              class="flex items-center gap-2
+                     rounded-lg border border-white/[0.07]
+                     bg-white/[0.02] px-3 py-1"
+            >
+
+              <span class="font-mono text-[10px]
+                           uppercase tracking-wider
+                           text-stone-600">
+                Voicing
+              </span>
+
+              <select
+                id="voicing"
+                class="border-0 bg-transparent px-2 py-2
+                       font-mono text-xs text-stone-300
+                       outline-none"
+              >
+                <option value="close">Close</option>
+                <option value="first">1st inversion</option>
+                <option value="second">2nd inversion</option>
+                <option value="open">Open</option>
+              </select>
+
+            </label>
+
+            <span
+              id="voiceNotes"
+              class="muted text-xs text-stone-600"
+            ></span>
+
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+
+
+    <!-- Print sheet -->
+
+    <section id="sheet"></section>
+
+  </main>
+
+
+  <!-- =========================================================
+       BOTTOM TRANSPORT BAR
+  ========================================================== -->
+
+  <footer
+    id="bar"
+    hidden
+    class="fixed bottom-0 left-0 right-0 z-50
+           border-t border-white/[0.08]
+           bg-[#0b0d0f]/90 backdrop-blur-xl"
+  >
+
+    <div
+      class="mx-auto flex w-full max-w-[900px]
+             flex-wrap items-center justify-center
+             gap-2 px-4 py-3"
+    >
+
+      <button
+        id="btnPlayProg"
+        class="rounded-xl border border-white/[0.08]
+               bg-white/[0.03] px-4 py-2.5
+               font-mono text-xs text-stone-400
+               hover:border-gold/30 hover:text-stone-100"
+      >
+        ▶ Play Progression
+      </button>
+
+      <button
+        id="btnPlayAll"
+        class="primary rounded-xl bg-gold
+               px-5 py-2.5 font-mono text-xs
+               font-semibold text-black
+               shadow-[0_8px_30px_rgba(215,168,79,.18)]
+               hover:bg-gold2"
+      >
+        ▶ Play Arrangement
+      </button>
+
+      <button
+        id="btnStopAll"
+        class="rounded-xl border border-white/[0.08]
+               bg-white/[0.03] px-4 py-2.5
+               font-mono text-xs text-stone-500
+               hover:border-red-400/30
+               hover:text-red-300"
+      >
+        ⏹ Stop
+      </button>
+
+      <button
+        id="btnPrint"
+        class="rounded-xl border border-white/[0.08]
+               bg-white/[0.03] px-4 py-2.5
+               font-mono text-xs text-stone-500
+               hover:text-stone-200"
+      >
+        Print
+      </button>
+
+    </div>
+
+  </footer>
+
+
+  <!-- =========================================================
+       SETTINGS DIALOG
+  ========================================================== -->
+
+  <dialog
+    id="dlgSet"
+    class="w-[min(560px,92vw)] rounded-3xl
+           border border-white/[0.1]
+           bg-[#111315] p-0 text-stone-100
+           shadow-[0_30px_100px_rgba(0,0,0,.55)]"
+  >
+
+    <form method="dialog">
+
+      <div
+        class="border-b border-white/[0.07]
+               px-6 py-5"
+      >
+
+        <div
+          class="mb-2 font-mono text-[10px]
+                 uppercase tracking-[.18em] text-gold"
+        >
+          Workspace
+        </div>
+
+        <h2
+          class="font-display text-xl font-semibold"
+        >
+          Settings & Project
+        </h2>
+
+      </div>
+
+
+      <div class="space-y-5 p-6">
+
+        <p class="m-0">
+          <label class="block">
+
+            <span
+              class="mb-2 block font-mono text-[10px]
+                     uppercase tracking-wider text-stone-600"
+            >
+              Project title
+            </span>
+
+            <input
+              id="title"
+              class="w-full rounded-xl
+                     border border-white/[0.08]
+                     bg-white/[0.025] px-4 py-3
+                     text-sm text-stone-200"
+            >
+
+          </label>
+        </p>
+
+
+        <p class="m-0">
+
+          <label class="block">
+
+            <span
+              class="mb-2 flex justify-between
+                     font-mono text-[10px]
+                     uppercase tracking-wider
+                     text-stone-600"
+            >
+              <span>Volume</span>
+              <span>80%</span>
+            </span>
+
+            <input
+              id="vol"
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value="0.8"
+              class="w-full accent-[#d7a84f]"
+            >
+
+          </label>
+
+        </p>
+
+
+        <label
+          class="flex cursor-pointer items-center gap-3
+                 rounded-xl border border-white/[0.07]
+                 bg-white/[0.02] p-4"
+        >
+
+          <input
+            type="checkbox"
+            id="theory"
+            class="h-4 w-4 accent-[#d7a84f]"
+          >
+
+          <span>
+
+            <span class="block text-sm text-stone-300">
+              Music Theory Details
+            </span>
+
+            <span class="block text-xs text-stone-600">
+              Show harmonic analysis and theory explanations
+            </span>
+
+          </span>
+
+        </label>
+
+
+        <div class="grid grid-cols-3 gap-2">
+
+          <button
+            type="button"
+            id="pNew"
+            class="rounded-xl border border-white/[0.08]
+                   bg-white/[0.025] px-3 py-2.5
+                   font-mono text-xs text-stone-400
+                   hover:text-stone-100"
+          >
+            New
+          </button>
+
+          <button
+            type="button"
+            id="pSave"
+            class="rounded-xl border border-gold/20
+                   bg-gold/[0.06] px-3 py-2.5
+                   font-mono text-xs text-gold
+                   hover:bg-gold/[0.1]"
+          >
+            Save
+          </button>
+
+          <button
+            type="button"
+            id="pExport"
+            class="rounded-xl border border-white/[0.08]
+                   bg-white/[0.025] px-3 py-2.5
+                   font-mono text-xs text-stone-400
+                   hover:text-stone-100"
+          >
+            Export
+          </button>
+
+        </div>
+
+
+        <div
+          class="flex flex-col gap-2 sm:flex-row"
+        >
+
+          <select
+            id="pList"
+            class="flex-1 rounded-xl
+                   border border-white/[0.08]
+                   bg-white/[0.025] px-3 py-2.5
+                   text-sm text-stone-300"
+          ></select>
+
+          <button
+            type="button"
+            id="pLoad"
+            class="rounded-xl border border-white/[0.08]
+                   px-4 py-2 font-mono text-xs
+                   text-stone-400 hover:text-stone-100"
+          >
+            Load
+          </button>
+
+          <button
+            type="button"
+            id="pDel"
+            class="rounded-xl border border-red-400/10
+                   px-4 py-2 font-mono text-xs
+                   text-red-400/70 hover:text-red-300"
+          >
+            Delete
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <div
+        class="border-t border-white/[0.07]
+               px-6 py-4"
+      >
+
+        <button
+          value="close"
+          class="w-full rounded-xl border
+                 border-white/[0.08]
+                 bg-white/[0.025] py-3
+                 font-mono text-xs text-stone-400
+                 hover:text-stone-100"
+        >
+          Close
+        </button>
+
+      </div>
+
+    </form>
+
+  </dialog>
+
+
+  <!-- =========================================================
+       EDIT NOTE DIALOG
+  ========================================================== -->
+
+  <dialog
+    id="dlgNote"
+    class="w-[min(440px,92vw)] rounded-3xl
+           border border-white/[0.1]
+           bg-[#111315] p-0 text-stone-100
+           shadow-[0_30px_100px_rgba(0,0,0,.55)]"
+  >
+
+    <form method="dialog">
+
+      <div
+        class="border-b border-white/[0.07]
+               px-6 py-5"
+      >
+
+        <div
+          class="font-mono text-[10px]
+                 uppercase tracking-[.18em] text-gold"
+        >
+          Melody editor
+        </div>
+
+        <h2
+          id="noteH"
+          class="mt-1 font-display text-xl font-semibold"
+        >
+          Edit note
+        </h2>
+
+      </div>
+
+
+      <div class="space-y-4 p-6">
+
+        <label class="block">
+
+          <span
+            class="mb-2 block font-mono text-[10px]
+                   uppercase tracking-wider text-stone-600"
+          >
+            Pitch
+          </span>
+
+          <select
+            id="nPitch"
+            class="w-full rounded-xl
+                   border border-white/[0.08]
+                   bg-white/[0.025] px-4 py-3
+                   text-sm"
+          ></select>
+
+        </label>
+
+
+        <label class="block">
+
+          <span
+            class="mb-2 block font-mono text-[10px]
+                   uppercase tracking-wider text-stone-600"
+          >
+            Start (seconds)
+          </span>
+
+          <input
+            id="nStart"
+            type="number"
+            step="0.01"
+            min="0"
+            class="w-full rounded-xl
+                   border border-white/[0.08]
+                   bg-white/[0.025] px-4 py-3
+                   font-mono text-sm"
+          >
+
+        </label>
+
+
+        <label class="block">
+
+          <span
+            class="mb-2 block font-mono text-[10px]
+                   uppercase tracking-wider text-stone-600"
+          >
+            Duration (seconds)
+          </span>
+
+          <input
+            id="nDur"
+            type="number"
+            step="0.01"
+            min="0.05"
+            class="w-full rounded-xl
+                   border border-white/[0.08]
+                   bg-white/[0.025] px-4 py-3
+                   font-mono text-sm"
+          >
+
+        </label>
+
+      </div>
+
+
+      <div
+        class="flex items-center justify-between
+               border-t border-white/[0.07]
+               px-6 py-4"
+      >
+
+        <button
+          type="button"
+          id="nDel"
+          class="rounded-xl border border-red-400/10
+                 px-4 py-2.5 font-mono text-xs
+                 text-red-400/70 hover:text-red-300"
+        >
+          Delete
+        </button>
+
+        <div class="flex gap-2">
+
+          <button
+            value="cancel"
+            class="rounded-xl border border-white/[0.08]
+                   px-4 py-2.5 font-mono text-xs
+                   text-stone-500"
+          >
+            Cancel
+          </button>
+
+          <button
+            value="ok"
+            id="nOk"
+            class="rounded-xl bg-gold
+                   px-5 py-2.5 font-mono text-xs
+                   font-semibold text-black
+                   hover:bg-gold2"
+          >
+            Save
+          </button>
+
+        </div>
+
+      </div>
+
+    </form>
+
+  </dialog>
+
+
+  <script src="app.js"></script>
+
 </body>
 </html>
